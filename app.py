@@ -142,13 +142,17 @@ CUSTOM_GUIDELINES = {
     "status": "System Default Ruleset"
 }
 
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    html = render_template('index.html')
+    return html.replace('const startTimestamp = null;', 'let startTimestamp = null;')
+
 
 @app.route('/api/accounts', methods=['GET'])
 def get_accounts():
     return jsonify(list(ACCOUNTS.values()))
+
 
 @app.route('/api/diagnose/<account_id>', methods=['GET'])
 def get_diagnose(account_id):
@@ -160,21 +164,22 @@ def get_diagnose(account_id):
         })
     return jsonify({"error": "Account not found"}), 404
 
+
 @app.route('/api/optimize', methods=['POST'])
 def optimize_agents():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     guidelines = data.get("guidelines", "").strip()
     if not guidelines:
         return jsonify({"status": "error", "message": "Guidelines cannot be empty"}), 400
-    
+
     CUSTOM_GUIDELINES["text"] = guidelines
     import datetime
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     CUSTOM_GUIDELINES["last_optimized"] = timestamp
     CUSTOM_GUIDELINES["status"] = "Optimized via Prompt Playground"
-    
+
     rules_count = len(guidelines.split(","))
-    
+
     return jsonify({
         "status": "success",
         "message": "Sentinel AI Agent Fleet Re-Optimized Successfully!",
@@ -186,6 +191,7 @@ def optimize_agents():
             "impact_forecast": "SLA compliance expected to increase by 4.2% over next 48h."
         }
     })
+
 
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', '').lower() in ('1', 'true', 'yes', 'on')
